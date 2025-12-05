@@ -30,10 +30,30 @@ import { SubjectService } from './subject.service';
           </div>
         </div>
 
-        <!-- Credit -->
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">Credit</label>
-          <input type="number" formControlName="credit" class="input-primary" placeholder="3">
+        <!-- Credit & Credit Hours -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Credit</label>
+            <input type="number" formControlName="credit" class="input-primary" placeholder="3">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Credit Hours (Số tiết học)</label>
+            <input type="number" formControlName="creditHours" class="input-primary" placeholder="45">
+          </div>
+        </div>
+
+        <!-- Score Ratios -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Process Score Ratio (Tỷ lệ điểm QT %)</label>
+            <input type="number" formControlName="processScoreRatio" class="input-primary" placeholder="30" min="0" max="100">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Component Score Ratio (Tỷ lệ điểm CK %)</label>
+            <input type="number" formControlName="componentScoreRatio" class="input-primary" placeholder="70" min="0" max="100">
+          </div>
         </div>
 
         <!-- Description -->
@@ -64,6 +84,9 @@ export class SubjectFormComponent implements OnInit {
     subjectCode: new FormControl('', [Validators.required]),
     subjectName: new FormControl('', [Validators.required]),
     credit: new FormControl(0, [Validators.required, Validators.min(1)]),
+    creditHours: new FormControl(0, [Validators.required, Validators.min(1)]),
+    processScoreRatio: new FormControl(30, [Validators.required, Validators.min(0), Validators.max(100)]),
+    componentScoreRatio: new FormControl(70, [Validators.required, Validators.min(0), Validators.max(100)]),
     description: new FormControl('')
   });
 
@@ -88,15 +111,28 @@ export class SubjectFormComponent implements OnInit {
     if (this.subjectForm.valid) {
       const formValue = this.subjectForm.value;
 
+      // Convert percentage to decimal (0-1)
+      const payload = {
+        ...formValue,
+        processScoreRatio: (formValue.processScoreRatio || 0) / 100,
+        componentScoreRatio: (formValue.componentScoreRatio || 0) / 100
+      };
+
       if (this.isEditMode && this.subjectId) {
-        this.subjectService.updateSubject(this.subjectId, formValue as any).subscribe({
+        this.subjectService.updateSubject(this.subjectId, payload as any).subscribe({
           next: () => this.router.navigate(['/subjects']),
-          error: () => alert('Failed to update')
+          error: (err) => {
+            console.error('Update error:', err);
+            alert('Failed to update: ' + (err.error?.message || 'Unknown error'));
+          }
         });
       } else {
-        this.subjectService.createSubject(formValue as any).subscribe({
+        this.subjectService.createSubject(payload as any).subscribe({
           next: () => this.router.navigate(['/subjects']),
-          error: () => alert('Failed to create')
+          error: (err) => {
+            console.error('Create error:', err);
+            alert('Failed to create: ' + (err.error?.message || 'Unknown error'));
+          }
         });
       }
     }
